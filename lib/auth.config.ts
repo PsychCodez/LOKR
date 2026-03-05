@@ -4,10 +4,12 @@ import Google from "next-auth/providers/google";
 export const authConfig = {
     providers: [
         Google({
-            clientId: process.env.GOOGLE_CLIENT_ID!,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         }),
     ],
+    // IMPORTANT: NextAuth v5 needs this when deployed to Vercel
+    trustHost: true,
     callbacks: {
         async authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
@@ -22,9 +24,17 @@ export const authConfig = {
             return isLoggedIn;
         },
         async signIn({ user }) {
+            // Debugging environment variables in Vercel (Masked)
+            console.log("--- Auth Configuration Debug ---");
+            console.log("GOOGLE_CLIENT_ID exists:", !!process.env.GOOGLE_CLIENT_ID);
+            console.log("GOOGLE_CLIENT_SECRET exists:", !!process.env.GOOGLE_CLIENT_SECRET);
+            console.log("AUTH_SECRET exists:", !!process.env.AUTH_SECRET);
+            console.log("DATABASE_URL exists:", !!process.env.DATABASE_URL);
+            console.log("ALLOWED_EMAILS exists:", !!process.env.ALLOWED_EMAILS);
+
             const emails = process.env.ALLOWED_EMAILS;
             if (!emails) {
-                console.error("❌ SIGN-IN FAILED: ALLOWED_EMAILS environment variable is missing in Vercel.");
+                console.error("❌ SIGN-IN FAILED: ALLOWED_EMAILS environment variable is missing.");
                 return false;
             }
 
@@ -38,9 +48,6 @@ export const authConfig = {
 
             if (!isAllowed) {
                 console.error(`❌ SIGN-IN BLOCKED: Email "${userEmail}" is not in the allowlist.`);
-                console.log("Current Allowlist:", allowedEmails);
-            } else {
-                console.log(`✅ SIGN-IN SUCCESS (Allowlist check): ${userEmail}`);
             }
 
             return isAllowed;
