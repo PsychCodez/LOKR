@@ -23,15 +23,27 @@ export const authConfig = {
         },
         async signIn({ user }) {
             const emails = process.env.ALLOWED_EMAILS;
-            if (!emails) return false;
+            if (!emails) {
+                console.error("❌ SIGN-IN FAILED: ALLOWED_EMAILS environment variable is missing in Vercel.");
+                return false;
+            }
 
             const allowedEmails = emails
                 .split(",")
                 .map((e) => e.trim().toLowerCase())
                 .filter(Boolean);
 
-            const email = user.email?.toLowerCase();
-            return !!(email && allowedEmails.includes(email));
+            const userEmail = user.email?.toLowerCase();
+            const isAllowed = !!(userEmail && allowedEmails.includes(userEmail));
+
+            if (!isAllowed) {
+                console.error(`❌ SIGN-IN BLOCKED: Email "${userEmail}" is not in the allowlist.`);
+                console.log("Current Allowlist:", allowedEmails);
+            } else {
+                console.log(`✅ SIGN-IN SUCCESS (Allowlist check): ${userEmail}`);
+            }
+
+            return isAllowed;
         },
         async jwt({ token, user }) {
             if (user) {
